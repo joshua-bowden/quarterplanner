@@ -190,8 +190,8 @@ if submit_button:
 
 
 #display result dataframe
-#st.table(df)
-st.dataframe(df, hide_index=True, width = 9999)
+st.table(df)
+#st.dataframe(df, hide_index=True, width = 9999)
 
 
 st.markdown("---")
