@@ -78,11 +78,11 @@ def page_setup():
 
 #main connection to ExploreCourses API (see bottom)
 @st.cache_resource(ttl=86400)
-def connect(): 
+def connectAPI(): 
     connect = CourseConnection()
 
 page_setup()
-connect()
+connectAPI()
 
 
 #get input, make uppercase and format
