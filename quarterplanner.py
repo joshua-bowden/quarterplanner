@@ -90,7 +90,7 @@ with st.form(key='my_form'):
     year = st.selectbox('Pick year', ('2023-2024', '2022-2023'), index=0, help="Majority of courses\
                         are already published on ExploreCourses for 2023-2024")
     #use 'value=example_input' below if wanted
-    user_input = st.text_area(label="Classes", placeholder="Your classes", label_visibility="collapsed").upper()
+    user_input = st.text_input(label="Classes", placeholder="Your classes", label_visibility="collapsed").upper()
     submit_button = st.form_submit_button(label='Submit')
 user_input_separated = separate_classes(user_input)
 
