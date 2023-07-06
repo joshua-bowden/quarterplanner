@@ -2,10 +2,15 @@ import streamlit as st
 import re
 import pandas as pd
 from explorecourses import *
+import streamlit_analytics
+
+streamlit_analytics.start_tracking()
 
 example_input = """CS 108, 112 or 112E, 124, 131, 140 or 140E or 212, 142, 143, 144, 145, 146, 147, 148, 149, 151, 154, 155, 157 (or PHIL 151), 163, 166, 168, 173, 190, 195 (max 4 units), 197, 205L, 206, 210A, 217, 221, 223A, 224N, 224R, 224S, 224U, 224V, 224W, 225A, 227B, 228, 229, 229M, 229T, 230, 231A, 231C, 231N, 232, 233, 234, 235, 237A, 237B, 238, 240, 240LX, 242, 243, 244, 244B, 245, 246, 247 (any suffix), 248 (any suffix), 250, 251, 252, 254, 254B, 255, 256, 257, 259Q, 261, 263, 265, 269I, 269O, 269Q, 270, 271, 272, 273A, 273B, 274, 275, 276, 278, 279, 281, 330, 333, 334A, 336, 342, 348 (any suffix), 351, 352, 361, 369L, 398, 448B; CME 108; EE 180, 267, 282, 374; MS&E 234"""
+
 st.set_page_config(page_title = "Quarter Planner", page_icon = "🍔")
 
+#remove blank space at top
 st.markdown(
     """
         <style>
@@ -50,7 +55,7 @@ def separate_classes(input_text):
             separated_classes.append((department, code))
     return separated_classes
 
-#this makes it so lightning fast
+#this makes it so lightning fast; cache each department permanently. should never reach 1GB limit
 @st.cache_data(persist="disk", show_spinner="Loading departments...")
 def query(dept, year):
     search_results = connect.get_courses_by_department(stanfordClass[0], year=year)
@@ -71,10 +76,14 @@ def page_setup():
             [Other UGHB Program Sheets](https://ughb.stanford.edu/plans-program-sheets/program-sheets/program-sheets/program-sheets/program-sheets/program-sheets), \
             [ExploreCourses main site](explorecourses.stanford.edu)")
 
-page_setup()
-
 #main connection to ExploreCourses API (see bottom)
-connect = CourseConnection()
+@st.cache_resource(ttl=86400)
+def connect(): 
+    connect = CourseConnection()
+
+page_setup()
+connect()
+
 
 #get input, make uppercase and format
 with st.form(key='my_form'):
@@ -82,7 +91,10 @@ with st.form(key='my_form'):
                         are already published on ExploreCourses for 2023-2024")
     user_input = st.text_area(label="Classes", placeholder="Your classes", label_visibility="collapsed", value=example_input).upper()
     submit_button = st.form_submit_button(label='Submit')
+user_input_separated = separate_classes(user_input)
 
+
+#session state so no table shows until interacted with
 if submit_button:
     if "submitted" not in st.session_state:
         st.session_state.submitted = True
@@ -91,12 +103,11 @@ if "submitted" in st.session_state:
     if st.session_state.submitted:
         submit_button = True
 
-user_input_separated = separate_classes(user_input)
-
 
 #grab courses using search, choose right ones
 #reduced queries; only  one for each dept
 #marks unvalidated courses
+#can't make function; messes with df
 user_courses = []
 dept_dict = {}
 first_unvalid = False
@@ -118,12 +129,14 @@ for stanfordClass in user_input_separated:
     elif current_unvalid:
         unvalidated += ", " + stanfordClass[0] + stanfordClass[1]
 
-#return validated and unvalidated courses
+
+#show which courses are found and which are not
+if submit_button:
+    if(len(user_courses) == 0):
+        st.warning("None of your entered courses could be found for " + year + "!", icon="⚠️")
+        st.stop()
 with st.expander("Courses found and not found for " + year):
-    if submit_button:
-        if(len(user_courses) == 0):
-            st.warning("None of your entered courses could be found for " + year + "!", icon="⚠️")
-            st.stop()
+    if submit_button:        
         validated = user_courses[0].subject + user_courses[0].code
         for course in user_courses[1:]:
             validated += ", " + course.subject + course.code
@@ -141,19 +154,19 @@ num_rows = 5
 df = pd.DataFrame(columns=headers, index=range(num_rows))
 df = df.fillna('')
 
-#add to table based on quarter, expand table as needed
 options = {"AUT", "WIN", "SPR"} #bad code design
 combo1 = {"AUT", "WIN"}
 combo2 = {"AUT", "SPR"}
 combo3 = {"WIN", "SPR"}
 
-
+#user interface
 toggle = st.checkbox("Toggle course descriptions")
 if toggle:
     wordsToShow = 15
 else:
     wordsToShow = 1
 
+#add to table based on quarter, expand table as needed
 if submit_button:
     for course in user_courses:
         location = 10 #skip this class if not offered/only in summer. maybe should show?
@@ -188,8 +201,11 @@ if submit_button:
             df = df.fillna('')
             num_rows += 1
 
+        if num_rows > 13:
+            df.iloc[10, 3] = "⚠️You are not graduating⚠️"
 
-#display result dataframe
+
+#display result dataframe; 2 options
 st.table(df)
 #st.dataframe(df, hide_index=True, width = 9999)
 
@@ -204,6 +220,7 @@ with col2:
     st.markdown("<div style='text-align: right;'><a href='https://github.com/joshua-bowden/quarterplanner' style='color: green;'>See Quarter Planner's source code</a></div>", unsafe_allow_html=True)
 
 
+streamlit_analytics.stop_tracking()
 
 
          
