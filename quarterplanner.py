@@ -80,9 +80,10 @@ def page_setup():
 @st.cache_resource(ttl=86400)
 def connectAPI(): 
     connect = CourseConnection()
+    return connect
 
 page_setup()
-connectAPI()
+connect = connectAPI()
 
 
 #get input, make uppercase and format
