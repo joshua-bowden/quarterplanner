@@ -6,7 +6,22 @@ import streamlit_analytics
 
 streamlit_analytics.start_tracking()
 
-example_input = """CS 108, 112 or 112E, 124, 131, 140 or 140E or 212, 142, 143, 144, 145, 146, 147, 148, 149, 151, 154, 155, 157 (or PHIL 151), 163, 166, 168, 173, 190, 195 (max 4 units), 197, 205L, 206, 210A, 217, 221, 223A, 224N, 224R, 224S, 224U, 224V, 224W, 225A, 227B, 228, 229, 229M, 229T, 230, 231A, 231C, 231N, 232, 233, 234, 235, 237A, 237B, 238, 240, 240LX, 242, 243, 244, 244B, 245, 246, 247 (any suffix), 248 (any suffix), 250, 251, 252, 254, 254B, 255, 256, 257, 259Q, 261, 263, 265, 269I, 269O, 269Q, 270, 271, 272, 273A, 273B, 274, 275, 276, 278, 279, 281, 330, 333, 334A, 336, 342, 348 (any suffix), 351, 352, 361, 369L, 398, 448B; CME 108; EE 180, 267, 282, 374; MS&E 234"""
+
+#main connection to ExploreCourses API: sets up and returns connection; retreives the object
+#connection and retrieval combined b/c public API; no user key required
+@st.cache_resource(ttl=86400)
+def connectAPI(): 
+    connect = CourseConnection()
+    return connect
+
+#query method to retrieve data
+#cache makes it so lightning fast; cache each department permanently. should never reach 1GB limit
+@st.cache_data(persist="disk", show_spinner="Loading departments...")
+def query(dept, year):
+    search_results = connection.get_courses_by_department(stanfordClass[0], year=year)
+    return search_results
+
+
 
 st.set_page_config(page_title = "Quarter Planner", page_icon = "🍔")
 
@@ -25,6 +40,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+#split input into classes
 @st.cache_data
 def separate_classes(input_text):
     residual = ''
@@ -55,11 +71,8 @@ def separate_classes(input_text):
             separated_classes.append((department, code))
     return separated_classes
 
-#this makes it so lightning fast; cache each department permanently. should never reach 1GB limit
-@st.cache_data(persist="disk", show_spinner="Loading departments...")
-def query(dept, year):
-    search_results = connect.get_courses_by_department(stanfordClass[0], year=year)
-    return search_results
+
+
 
 @st.cache_data(persist="disk")
 def page_setup():
@@ -76,14 +89,12 @@ def page_setup():
             [Other UGHB Program Sheets](https://ughb.stanford.edu/plans-program-sheets/program-sheets/program-sheets/program-sheets/program-sheets/program-sheets), \
             [ExploreCourses main site](explorecourses.stanford.edu)")
 
-#main connection to ExploreCourses API (see bottom)
-@st.cache_resource(ttl=86400)
-def connectAPI(): 
-    connect = CourseConnection()
-    return connect
+
+
+
 
 page_setup()
-connect = connectAPI()
+connection = connectAPI()
 
 
 #get input, make uppercase and format
@@ -107,7 +118,7 @@ if "submitted" in st.session_state:
 
 
 #grab courses using search, choose right ones
-#reduced queries; only  one for each dept
+#reduced queries; only one for each dept
 #marks unvalidated courses
 #can't make function; messes with df
 user_courses = []
