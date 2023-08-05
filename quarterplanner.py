@@ -1,29 +1,37 @@
 import streamlit as st
+from streamlit.connections import ExperimentalBaseConnection
 import re
 import pandas as pd
 from explorecourses import *
 import streamlit_analytics
 
 streamlit_analytics.start_tracking()
-
-
-#main connection to ExploreCourses API: sets up and returns connection; retreives the object
-#connection and retrieval combined b/c public API; no user key required
-@st.cache_resource(ttl=86400)
-def connectAPI(): 
-    connect = CourseConnection()
-    return connect
-
-#query method to retrieve data
-#cache makes it so lightning fast; cache each department permanently. should never reach 1GB limit
-@st.cache_data(persist="disk", show_spinner="Loading departments...")
-def query(dept, year):
-    search_results = connection.get_courses_by_department(stanfordClass[0], year=year)
-    return search_results
-
-
-
 st.set_page_config(page_title = "Quarter Planner", page_icon = "🍔")
+
+
+class ExploreCoursesConnection(ExperimentalBaseConnection["course_connection.CourseConnection"]):
+    def _connect(self):
+        connectObject = CourseConnection()
+        return connectObject
+    
+    def cursor(self):
+        connectObject = CourseConnection()
+        return connectObject
+    
+    #query method to retrieve data
+    #cache makes it so lightning fast; cache each department permanently. should never reach 1GB limit
+    @st.cache_data(persist="disk", show_spinner="Loading departments...")
+    #make sure to hash dept and year so things change
+    def query(_self, _cursor, dept, year):
+        print("department is")
+        print(dept)
+        search_results = _cursor.get_courses_by_department(dept, year=year)
+        return search_results
+    
+
+conn = st.experimental_connection(name="Explore", type=ExploreCoursesConnection)
+cursor = conn.cursor()
+
 
 #remove blank space at top
 st.markdown(
@@ -41,7 +49,6 @@ st.markdown(
 )
 
 #split input into classes
-@st.cache_data
 def separate_classes(input_text):
     residual = ''
     # Split input text based on comma separator
@@ -72,8 +79,6 @@ def separate_classes(input_text):
     return separated_classes
 
 
-
-
 @st.cache_data(persist="disk")
 def page_setup():
     st.title('🍔 Stanford Quarter Planner')
@@ -94,13 +99,15 @@ def page_setup():
 
 
 page_setup()
-connection = connectAPI()
 
 
 #get input, make uppercase and format
 with st.form(key='my_form'):
+    #not sure why 2022-2023 not working, maybe API change
     year = st.selectbox('Pick year', ('2023-2024', '2022-2023'), index=0, help="Majority of courses\
                         are already published on ExploreCourses for 2023-2024")
+    #year = "2023-2024"
+    #st.write("Year: 2023-2024")
     #use 'value=example_input' below if wanted
     user_input = st.text_input(label="Classes", placeholder="Your classes", label_visibility="collapsed").upper()
     submit_button = st.form_submit_button(label='Submit')
@@ -128,7 +135,7 @@ unvalidated = ""
 for stanfordClass in user_input_separated:
     current_unvalid = True
     if stanfordClass[0] not in dept_dict:
-        search_results = query(stanfordClass[0], year)  #function to save dept courses
+        search_results = conn.query(cursor, stanfordClass[0], year)  #function to save dept courses
         dept_dict.update({stanfordClass[0]: search_results})
     #linear search fine for small; cs has 350 courses
     for course in dept_dict.get(stanfordClass[0])[:]:   #skip 20 for low level courses; can't do for aero
@@ -235,12 +242,7 @@ with col2:
 
 streamlit_analytics.stop_tracking()
 
-
          
-
-
-
-
 
 
 
