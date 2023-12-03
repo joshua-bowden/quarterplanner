@@ -1,5 +1,5 @@
 import streamlit as st
-from streamlit.connections import ExperimentalBaseConnection
+from streamlit.connections import BaseConnection
 import re
 import pandas as pd
 from explorecourses import *
@@ -9,7 +9,7 @@ streamlit_analytics.start_tracking()
 st.set_page_config(page_title = "Quarter Planner", page_icon = "🍔")
 
 
-class ExploreCoursesConnection(ExperimentalBaseConnection["course_connection.CourseConnection"]):
+class ExploreCoursesConnection(BaseConnection["course_connection.CourseConnection"]):
     def _connect(self):
         connectObject = CourseConnection()
         return connectObject
@@ -29,7 +29,7 @@ class ExploreCoursesConnection(ExperimentalBaseConnection["course_connection.Cou
         return search_results
     
 
-conn = st.experimental_connection(name="Explore", type=ExploreCoursesConnection)
+conn = st.connection(name="Explore", type=ExploreCoursesConnection)
 cursor = conn.cursor()
 
 
