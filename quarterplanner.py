@@ -1,5 +1,5 @@
 import streamlit as st
-from st.connections import BaseConnection
+from streamlit.connections import BaseConnection
 import re
 import pandas as pd
 from explorecourses import *
