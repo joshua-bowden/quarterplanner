@@ -87,7 +87,7 @@ def page_setup():
                 on the first course, e.g. CS 229, 234, EE 263, 364A.\
                 The input text is also stripped of semicolons, 'or', parentheticals, etc for further\
                 ease of copy-pasting from program sheets.")
-    st.write("Relevant links: [CS AI Program Sheet](https://cs.stanford.edu/degrees/ug/ProgramSheets/CS_AI_2223PS.pdf), \
+    st.write("Relevant links: [CS AI Program Sheet](https://drive.google.com/file/d/1SjwNMagCJHazMI-NQsOOg9YE4LAR4xg7/view), \
             [MSCS AI Program Sheet](https://cs.stanford.edu/degrees/mscs/programsheets/22-23/MSCS-2023-AI.pdf), \
             [Math Major Program Sheet](https://drive.google.com/file/d/12pAlP0mjBcU0Atflgn6pg5V1pRcif5kZ/view), \
             [Aero/Astro Program Sheet](https://drive.google.com/file/d/1d_DNjzOMeAffM_wFPBwa24gu7urgJGKH/view), \
